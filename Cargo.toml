@@ -1,6 +1,6 @@
 [package]
 name = "lcars-ops"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["7ANG0N1N3 <contact@tangonine.com>"]
 description = "LCARS-themed system monitor GUI built with egui"
