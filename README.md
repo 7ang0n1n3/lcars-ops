@@ -16,6 +16,12 @@ A Star Trek LCARS-themed system monitor built with [egui](https://github.com/emi
 - Stardate display
 - Press `Q` to quit
 
+## Platform
+
+Developed and tested on **Arch Linux** with **Hyprland** (Wayland). Other Linux distributions should work as long as the standard sysfs paths are available (`/sys/class/drm/`, `/sys/class/power_supply/`, etc.). Other desktop environments and window managers should work too.
+
+Windows and macOS are not supported — GPU and battery data is read directly from Linux sysfs.
+
 ## Requirements
 
 - Rust toolchain (stable) — install via [rustup](https://rustup.rs)
