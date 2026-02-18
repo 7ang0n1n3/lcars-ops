@@ -1,6 +1,7 @@
 use egui::{Pos2, Rect, Rounding, Vec2};
 
 use crate::system::battery::BatteryInfo;
+use crate::system::gpu::GpuInfo;
 use crate::system::info::SystemInfo;
 use crate::system::process::ProcessView;
 use crate::theme;
@@ -11,12 +12,14 @@ pub enum View {
     Dashboard,
     Processes,
     Battery,
+    Gpu,
 }
 
 pub struct LcarsApp {
     sys_info: SystemInfo,
     process_view: ProcessView,
     battery_info: BatteryInfo,
+    gpu_info: GpuInfo,
     current_view: View,
 }
 
@@ -39,6 +42,7 @@ impl LcarsApp {
             sys_info: SystemInfo::new(),
             process_view: ProcessView::default(),
             battery_info: BatteryInfo::new(),
+            gpu_info: GpuInfo::new(),
             current_view: View::Dashboard,
         }
     }
@@ -56,6 +60,7 @@ impl eframe::App for LcarsApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.sys_info.refresh_if_needed();
         self.battery_info.refresh_if_needed();
+        self.gpu_info.refresh_if_needed();
         ctx.request_repaint_after(std::time::Duration::from_millis(500));
 
         if ctx.input(|i| i.key_pressed(egui::Key::Q)) {
@@ -283,6 +288,36 @@ impl eframe::App for LcarsApp {
                     self.current_view = View::Battery;
                 }
 
+                y += button_h + theme::BAR_SPACING;
+
+                // GPU button
+                let gpu_rect = Rect::from_min_size(
+                    Pos2::new(sidebar_x, y),
+                    Vec2::new(sidebar_w, button_h),
+                );
+                let gpu_color = if self.current_view == View::Gpu {
+                    theme::ORANGE
+                } else {
+                    theme::MAGENTA
+                };
+                let gpu_resp = ui.allocate_rect(gpu_rect, egui::Sense::click());
+                let gpu_draw_color = if gpu_resp.hovered() {
+                    theme::brighten(gpu_color, 40)
+                } else {
+                    gpu_color
+                };
+                ui.painter().rect_filled(gpu_rect, btn_rounding, gpu_draw_color);
+                ui.painter().text(
+                    gpu_rect.right_center() - egui::vec2(button_h / 2.0 + 4.0, -3.0),
+                    egui::Align2::RIGHT_CENTER,
+                    "GPU",
+                    egui::FontId::monospace(30.0),
+                    theme::BLACK,
+                );
+                if gpu_resp.clicked() {
+                    self.current_view = View::Gpu;
+                }
+
                 y += button_h + theme::BAR_SPACING * 3.0;
 
                 // Decorative labels
@@ -355,6 +390,10 @@ impl eframe::App for LcarsApp {
                             View::Battery => {
                                 ui.add_space(8.0);
                                 crate::views::battery::show(ui, &self.battery_info);
+                            }
+                            View::Gpu => {
+                                ui.add_space(8.0);
+                                crate::views::gpu::show(ui, &self.gpu_info);
                             }
                         }
                     });
