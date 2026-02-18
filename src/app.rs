@@ -385,6 +385,7 @@ impl eframe::App for LcarsApp {
                                     ui,
                                     &mut self.process_view,
                                     &self.sys_info.system,
+                                    &self.sys_info.users,
                                 );
                             }
                             View::Battery => {

@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::time::{Duration, Instant};
 
-use sysinfo::{Components, Disks, Networks, ProcessesToUpdate, System};
+use sysinfo::{Components, Disks, Networks, ProcessesToUpdate, System, Users};
 
 const REFRESH_INTERVAL: Duration = Duration::from_millis(1500);
 
@@ -11,6 +11,7 @@ pub struct SystemInfo {
     pub networks: Networks,
     pub disks: Disks,
     pub components: Components,
+    pub users: Users,
     // CPU sensor
     pub cpu_temp: f32,
     pub cpu_temp_max: f32,
@@ -34,6 +35,7 @@ impl SystemInfo {
         let networks = Networks::new_with_refreshed_list();
         let disks = Disks::new_with_refreshed_list();
         let components = Components::new_with_refreshed_list();
+        let users = Users::new_with_refreshed_list();
 
         let cpu_temp = find_cpu_temp(&components);
         let cpu_logical_cores = system.cpus().len();
@@ -52,6 +54,7 @@ impl SystemInfo {
             networks,
             disks,
             components,
+            users,
             last_refresh: Instant::now(),
         }
     }
