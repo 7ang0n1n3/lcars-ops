@@ -42,3 +42,17 @@ cargo run --release
 ```
 
 The compiled binary will be at `target/release/lcars-ops`.
+
+## Install
+
+To build and install the binary to `/usr/bin`:
+
+```bash
+./install.sh
+```
+
+Once installed, launch from anywhere with:
+
+```bash
+lcars-ops
+```
