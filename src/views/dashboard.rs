@@ -1,6 +1,6 @@
 use egui::Ui;
 
-use crate::system::info::{format_bytes, rate_fraction, NetworkData, SystemInfo};
+use crate::system::info::{format_bytes, format_uptime, rate_fraction, NetworkData, SystemInfo};
 use crate::theme;
 use crate::widgets::gauge::LcarsGauge;
 use crate::widgets::panel::LcarsPanel;
@@ -46,6 +46,62 @@ pub fn show(ui: &mut Ui, sys: &SystemInfo) {
                         .show(ui);
                 }
             });
+        });
+    });
+
+    // CPU Sensors Panel
+    LcarsPanel::new("Sensors", theme::ORANGE).show(ui, |ui| {
+        let temp_fraction = (sys.cpu_temp / 100.0).clamp(0.0, 1.0);
+        let temp_color = if sys.cpu_temp >= 80.0 {
+            theme::RED
+        } else if sys.cpu_temp >= 60.0 {
+            theme::YELLOW
+        } else {
+            theme::GREEN
+        };
+        let full_width = ui.available_width() - 20.0;
+        LcarsGauge::new("TEMP", temp_fraction, temp_color)
+            .width(full_width)
+            .font_size(20.0)
+            .show(ui);
+        ui.label(
+            egui::RichText::new(format!(
+                "          {:.0}\u{00b0}C  \u{2022}  Highest: {:.0}\u{00b0}C",
+                sys.cpu_temp, sys.cpu_temp_max
+            ))
+            .color(temp_color)
+            .font(egui::FontId::monospace(20.0)),
+        );
+    });
+
+    // CPU Properties Panel
+    LcarsPanel::new("Properties", theme::PEACH).show(ui, |ui| {
+        let uptime = format_uptime(sysinfo::System::uptime());
+        let freq_str = if sys.cpu_max_freq_ghz > 0.0 {
+            format!("{:.2} GHz", sys.cpu_max_freq_ghz)
+        } else {
+            "N/A".to_string()
+        };
+
+        let left: &[(&str, String)] = &[
+            ("MAX FREQUENCY", freq_str),
+            ("LOGICAL CORES", sys.cpu_logical_cores.to_string()),
+            ("PHYSICAL CORES", sys.cpu_physical_cores.to_string()),
+            ("SOCKETS", sys.cpu_sockets.to_string()),
+        ];
+        let right: &[(&str, String)] = &[
+            ("UPTIME", uptime),
+            ("VIRTUALIZATION", sys.cpu_virtualization.clone()),
+            ("ARCHITECTURE", sys.cpu_architecture.clone()),
+        ];
+
+        ui.columns(2, |cols| {
+            for (label, value) in left {
+                show_cpu_prop(&mut cols[0], label, value);
+            }
+            for (label, value) in right {
+                show_cpu_prop(&mut cols[1], label, value);
+            }
         });
     });
 
@@ -178,6 +234,20 @@ pub fn show(ui: &mut Ui, sys: &SystemInfo) {
             });
         });
     }
+}
+
+fn show_cpu_prop(ui: &mut Ui, label: &str, value: &str) {
+    ui.label(
+        egui::RichText::new(label)
+            .color(theme::PEACH.linear_multiply(0.65))
+            .font(egui::FontId::monospace(18.0)),
+    );
+    ui.label(
+        egui::RichText::new(value)
+            .color(theme::PEACH)
+            .font(egui::FontId::monospace(22.0)),
+    );
+    ui.add_space(4.0);
 }
 
 fn format_rate(bytes_per_sec: f64) -> String {

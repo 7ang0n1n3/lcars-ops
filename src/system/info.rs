@@ -1,6 +1,8 @@
+use std::collections::HashSet;
+use std::fs;
 use std::time::{Duration, Instant};
 
-use sysinfo::{Disks, Networks, ProcessesToUpdate, System};
+use sysinfo::{Components, Disks, Networks, ProcessesToUpdate, System};
 
 const REFRESH_INTERVAL: Duration = Duration::from_millis(1500);
 
@@ -8,6 +10,17 @@ pub struct SystemInfo {
     pub system: System,
     pub networks: Networks,
     pub disks: Disks,
+    pub components: Components,
+    // CPU sensor
+    pub cpu_temp: f32,
+    pub cpu_temp_max: f32,
+    // CPU static properties (read once at init)
+    pub cpu_max_freq_ghz: f32,
+    pub cpu_logical_cores: usize,
+    pub cpu_physical_cores: usize,
+    pub cpu_sockets: usize,
+    pub cpu_virtualization: String,
+    pub cpu_architecture: String,
     last_refresh: Instant,
 }
 
@@ -20,11 +33,25 @@ impl SystemInfo {
 
         let networks = Networks::new_with_refreshed_list();
         let disks = Disks::new_with_refreshed_list();
+        let components = Components::new_with_refreshed_list();
+
+        let cpu_temp = find_cpu_temp(&components);
+        let cpu_logical_cores = system.cpus().len();
+        let cpu_physical_cores = system.physical_core_count().unwrap_or(0);
 
         Self {
+            cpu_temp,
+            cpu_temp_max: cpu_temp,
+            cpu_max_freq_ghz: read_max_freq_ghz(),
+            cpu_logical_cores,
+            cpu_physical_cores,
+            cpu_sockets: count_sockets(),
+            cpu_virtualization: detect_virtualization(),
+            cpu_architecture: std::env::consts::ARCH.to_string(),
             system,
             networks,
             disks,
+            components,
             last_refresh: Instant::now(),
         }
     }
@@ -36,6 +63,12 @@ impl SystemInfo {
             self.system.refresh_processes(ProcessesToUpdate::All, true);
             self.networks.refresh(true);
             self.disks.refresh(true);
+            self.components.refresh(true);
+            let temp = find_cpu_temp(&self.components);
+            self.cpu_temp = temp;
+            if temp > self.cpu_temp_max {
+                self.cpu_temp_max = temp;
+            }
             self.last_refresh = Instant::now();
             true
         } else {
@@ -120,6 +153,61 @@ impl SystemInfo {
     }
 }
 
+// ── CPU helpers ──────────────────────────────────────────────────────────────
+
+fn find_cpu_temp(components: &Components) -> f32 {
+    let patterns = ["Tctl", "Tdie", "Package id 0", "CPU Temperature", "CPU"];
+    for pat in &patterns {
+        if let Some(c) = components.iter().find(|c| c.label().contains(pat)) {
+            if let Some(t) = c.temperature() {
+                return t;
+            }
+        }
+    }
+    components
+        .iter()
+        .find_map(|c| c.temperature())
+        .unwrap_or(0.0)
+}
+
+fn read_max_freq_ghz() -> f32 {
+    fs::read_to_string("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq")
+        .ok()
+        .and_then(|s| s.trim().parse::<u64>().ok())
+        .map(|khz| khz as f32 / 1_000_000.0)
+        .unwrap_or(0.0)
+}
+
+fn count_sockets() -> usize {
+    let mut ids = HashSet::new();
+    if let Ok(entries) = fs::read_dir("/sys/devices/system/cpu") {
+        for entry in entries.filter_map(|e| e.ok()) {
+            let name = entry.file_name().to_string_lossy().to_string();
+            if name.starts_with("cpu") && name[3..].chars().all(|c| c.is_ascii_digit()) {
+                if let Ok(id) = fs::read_to_string(entry.path().join("topology/physical_package_id")) {
+                    ids.insert(id.trim().to_string());
+                }
+            }
+        }
+    }
+    ids.len().max(1)
+}
+
+fn detect_virtualization() -> String {
+    if let Ok(content) = fs::read_to_string("/proc/cpuinfo") {
+        if let Some(flags) = content.lines().find(|l| l.starts_with("flags")) {
+            if flags.contains("svm") {
+                return "AMD-V".to_string();
+            } else if flags.contains("vmx") {
+                return "Intel VT-x".to_string();
+            }
+        }
+    }
+    "None".to_string()
+}
+
+// ── Shared utilities ─────────────────────────────────────────────────────────
+
 pub struct DiskData {
     pub mount: String,
     pub used: u64,
@@ -158,4 +246,11 @@ pub fn format_bytes(bytes: u64) -> String {
     } else {
         format!("{} B", bytes)
     }
+}
+
+pub fn format_uptime(seconds: u64) -> String {
+    let h = seconds / 3600;
+    let m = (seconds % 3600) / 60;
+    let s = seconds % 60;
+    format!("{:02}:{:02}:{:02}", h, m, s)
 }
