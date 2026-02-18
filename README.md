@@ -6,7 +6,7 @@ A Star Trek LCARS-themed system monitor built with [egui](https://github.com/emi
 
 ## Features
 
-- Real-time CPU usage (total + per-core)
+- Real-time CPU usage (total + per-core), temperature, and properties (max frequency, core counts, sockets, uptime, virtualization, architecture)
 - Memory and swap monitoring
 - Disk usage per mount point
 - Network RX/TX rates and totals
