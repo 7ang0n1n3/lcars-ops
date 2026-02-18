@@ -1,5 +1,6 @@
 use egui::{Pos2, Rect, Rounding, Vec2};
 
+use crate::system::battery::BatteryInfo;
 use crate::system::info::SystemInfo;
 use crate::system::process::ProcessView;
 use crate::theme;
@@ -9,11 +10,13 @@ use crate::widgets::elbow::{ElbowCorner, LcarsElbow};
 pub enum View {
     Dashboard,
     Processes,
+    Battery,
 }
 
 pub struct LcarsApp {
     sys_info: SystemInfo,
     process_view: ProcessView,
+    battery_info: BatteryInfo,
     current_view: View,
 }
 
@@ -35,6 +38,7 @@ impl LcarsApp {
         Self {
             sys_info: SystemInfo::new(),
             process_view: ProcessView::default(),
+            battery_info: BatteryInfo::new(),
             current_view: View::Dashboard,
         }
     }
@@ -51,6 +55,7 @@ impl LcarsApp {
 impl eframe::App for LcarsApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.sys_info.refresh_if_needed();
+        self.battery_info.refresh_if_needed();
         ctx.request_repaint_after(std::time::Duration::from_millis(500));
 
         if ctx.input(|i| i.key_pressed(egui::Key::Q)) {
@@ -248,6 +253,36 @@ impl eframe::App for LcarsApp {
                     self.current_view = View::Processes;
                 }
 
+                y += button_h + theme::BAR_SPACING;
+
+                // Battery button
+                let bat_rect = Rect::from_min_size(
+                    Pos2::new(sidebar_x, y),
+                    Vec2::new(sidebar_w, button_h),
+                );
+                let bat_color = if self.current_view == View::Battery {
+                    theme::ORANGE
+                } else {
+                    theme::PERIWINKLE
+                };
+                let bat_resp = ui.allocate_rect(bat_rect, egui::Sense::click());
+                let bat_draw_color = if bat_resp.hovered() {
+                    theme::brighten(bat_color, 40)
+                } else {
+                    bat_color
+                };
+                ui.painter().rect_filled(bat_rect, btn_rounding, bat_draw_color);
+                ui.painter().text(
+                    bat_rect.right_center() - egui::vec2(button_h / 2.0 + 4.0, -3.0),
+                    egui::Align2::RIGHT_CENTER,
+                    "BATTERY",
+                    egui::FontId::monospace(30.0),
+                    theme::BLACK,
+                );
+                if bat_resp.clicked() {
+                    self.current_view = View::Battery;
+                }
+
                 y += button_h + theme::BAR_SPACING * 3.0;
 
                 // Decorative labels
@@ -316,6 +351,10 @@ impl eframe::App for LcarsApp {
                                     &mut self.process_view,
                                     &self.sys_info.system,
                                 );
+                            }
+                            View::Battery => {
+                                ui.add_space(8.0);
+                                crate::views::battery::show(ui, &self.battery_info);
                             }
                         }
                     });
