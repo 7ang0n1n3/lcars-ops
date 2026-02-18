@@ -1,0 +1,12 @@
+[package]
+name = "lcars-ops"
+version = "0.1.0"
+edition = "2021"
+authors = ["7ANG0N1N3 <contact@tangonine.com>"]
+description = "LCARS-themed system monitor GUI built with egui"
+
+[dependencies]
+eframe = "0.30"
+egui = "0.30"
+sysinfo = "0.33"
+chrono = "0.4"
