@@ -10,7 +10,7 @@ A Star Trek LCARS-themed system monitor built with [egui](https://github.com/emi
 - Memory and swap monitoring
 - Disk usage per mount point
 - Network RX/TX rates and totals
-- Sortable process table with expandable child processes
+- Sortable process table (by name, PID, user, memory, CPU%) with columns for process, PID, user, memory, processor, and GPU — expandable child processes
 - Battery monitoring — charge level, power draw, health, design capacity, charge cycles, and hardware info
 - GPU monitoring — utilization, VRAM usage, clock frequencies, power draw, temperature, and hardware properties
 - Stardate display
