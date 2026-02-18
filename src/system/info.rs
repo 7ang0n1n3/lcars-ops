@@ -142,19 +142,19 @@ pub fn rate_fraction(rate: f64) -> f32 {
 }
 
 pub fn format_bytes(bytes: u64) -> String {
-    const KIB: u64 = 1024;
-    const MIB: u64 = KIB * 1024;
-    const GIB: u64 = MIB * 1024;
-    const TIB: u64 = GIB * 1024;
+    const KB: u64 = 1_000;
+    const MB: u64 = KB * 1_000;
+    const GB: u64 = MB * 1_000;
+    const TB: u64 = GB * 1_000;
 
-    if bytes >= TIB {
-        format!("{:.1} TiB", bytes as f64 / TIB as f64)
-    } else if bytes >= GIB {
-        format!("{:.1} GiB", bytes as f64 / GIB as f64)
-    } else if bytes >= MIB {
-        format!("{:.1} MiB", bytes as f64 / MIB as f64)
-    } else if bytes >= KIB {
-        format!("{:.1} KiB", bytes as f64 / KIB as f64)
+    if bytes >= TB {
+        format!("{:.1} TB", bytes as f64 / TB as f64)
+    } else if bytes >= GB {
+        format!("{:.1} GB", bytes as f64 / GB as f64)
+    } else if bytes >= MB {
+        format!("{:.1} MB", bytes as f64 / MB as f64)
+    } else if bytes >= KB {
+        format!("{:.1} KB", bytes as f64 / KB as f64)
     } else {
         format!("{} B", bytes)
     }
